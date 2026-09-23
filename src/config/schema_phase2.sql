@@ -1,0 +1,79 @@
+--- تابع عمومی برای به‌روزرسانی خودکار updated_at
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- جدول شرکت‌ها
+CREATE TABLE companies (
+  id SERIAL PRIMARY KEY,
+  name_fa VARCHAR(255) NOT NULL,
+  name_en VARCHAR(255) NOT NULL,
+  registration_number VARCHAR(50),
+  economic_code VARCHAR(50),
+  address_fa TEXT,
+  address_en TEXT,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_by INTEGER REFERENCES users(id),
+  deleted_at TIMESTAMPTZ
+);
+
+CREATE TRIGGER trg_companies_updated_at
+BEFORE UPDATE ON companies
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- جدول ارتباط کاربر با شرکت‌های مجاز (برای جداسازی دسترسی)
+CREATE TABLE user_companies (
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  company_id INTEGER NOT NULL REFERENCES companies(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (user_id, company_id)
+);
+
+-- جدول واحد اندازه‌گیری (lookup)
+CREATE TABLE units (
+  id SERIAL PRIMARY KEY,
+  code VARCHAR(20) NOT NULL UNIQUE,
+  name_fa VARCHAR(100) NOT NULL,
+  name_en VARCHAR(100) NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_by INTEGER REFERENCES users(id),
+  deleted_at TIMESTAMPTZ
+);
+
+CREATE TRIGGER trg_units_updated_at
+BEFORE UPDATE ON units
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- جدول کالاها
+CREATE TABLE goods (
+  id SERIAL PRIMARY KEY,
+  company_id INTEGER NOT NULL REFERENCES companies(id),
+  item_code VARCHAR(50) NOT NULL,
+  name_fa VARCHAR(255) NOT NULL,
+  name_en VARCHAR(255) NOT NULL,
+  hs_code VARCHAR(20),
+  unit_id INTEGER NOT NULL REFERENCES units(id),
+  item_type VARCHAR(30) NOT NULL CHECK (
+    item_type IN ('raw_material', 'part', 'finished_product', 'machinery', 'waste')
+  ),
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_by INTEGER REFERENCES users(id),
+  deleted_at TIMESTAMPTZ,
+  UNIQUE (company_id, item_code)
+);
+
+CREATE INDEX idx_goods_company_id ON goods(company_id);
+CREATE INDEX idx_goods_deleted_at ON goods(deleted_at);
+
+CREATE TRIGGER trg_goods_updated_at
+BEFORE UPDATE ON goods
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
