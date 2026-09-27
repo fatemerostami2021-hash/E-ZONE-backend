@@ -1,4 +1,6 @@
-const pool = require('../config/db');
+const { pool } = require('../config/db');
+
+
 
 const SELECT_BASE = `
   SELECT g.*,

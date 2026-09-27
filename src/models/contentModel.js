@@ -1,4 +1,5 @@
-const pool = require('../config/db');
+const { pool } = require('../config/db');
+
 
 /**
  * Factory عمومی برای جدول‌های محتوای CMS که از الگوی مشترک پیروی می‌کنن:

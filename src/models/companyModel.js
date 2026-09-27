@@ -1,4 +1,5 @@
-const pool = require('../config/db');
+const { pool } = require('../config/db');
+
 
 const getAllCompanies = async () => {
   const result = await pool.query(

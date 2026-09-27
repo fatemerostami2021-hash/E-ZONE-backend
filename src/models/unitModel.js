@@ -1,4 +1,5 @@
-const pool = require('../config/db');
+const { pool } = require('../config/db');
+
 
 const getAllUnits = async () => {
   const result = await pool.query(
